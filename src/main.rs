@@ -1,8 +1,24 @@
 use core::ops;
 
 fn main() {
-    let image_width: i32 = 256;
-    let image_height: i32 = 256;
+
+    // Image
+    let aspect_ratio = 16.0/9.0;
+    let image_width: i32 = 400;
+    let image_height: i32 = (image_width as f64 / aspect_ratio) as i32;
+
+    // Camera
+
+    let viewport_height = 2.0;
+    let viewport_width = aspect_ratio * viewport_height;
+    let focal_length = 1.0;
+
+    let origin = Point3::new(0.0,0.0,0.0);
+    let horizontal = Vec3::new(viewport_width, 0.0, 0.0);
+    let vertical = Vec3::new(0.0, viewport_height, 0.0);
+    let lower_left_corner = origin - (horizontal/2.0) - (vertical/2.0) - Vec3::new(0.0, 0.0, focal_length);
+
+    // Render
 
     println!("P3");
     println!("{0} {1}", image_width, image_height);
@@ -10,12 +26,11 @@ fn main() {
     for j in (0..image_height).rev() {
         eprintln!("Scanlines remaining {0}", j);
         for i in 0..image_width {
-            let clr = Color {
-                x: f64::from(i) / f64::from(image_width - 1),
-                y: f64::from(j) / f64::from(image_height - 1),
-                z: 0.25,
-            };
-            write_color(&clr);
+            let u = i as f64 / (image_width as f64 - 1.0);
+            let v = j as f64 / (image_height as f64 - 1.0);
+            let r = Ray {origin, direction: lower_left_corner + (horizontal * u) + (vertical * v) - origin};
+            let pixel_color = ray_color(&r);
+            write_color(&pixel_color);
         }
     }
 
@@ -30,6 +45,7 @@ fn write_color(clr: &Color) {
     println!("{0} {1} {2}", ir, ig, ib);
 }
 
+#[derive(Clone, Copy)]
 struct Vec3 {
     x: f64,
     y: f64,
@@ -37,6 +53,10 @@ struct Vec3 {
 }
 
 impl Vec3 {
+    fn new(x: f64, y: f64, z: f64) -> Vec3 {
+        Vec3{x,y,z}
+    }
+
     fn length_squared(&self) -> f64 {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
@@ -69,8 +89,22 @@ impl ops::Add<&Vec3> for &Vec3 {
         Vec3 { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
     }
 }
+impl ops::Add<Vec3> for Vec3 {
+    type Output = Vec3;
+
+    fn add(self, rhs: Vec3) -> Self::Output {
+        Vec3 { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
+    }
+}
 
 impl ops::Mul<f64> for &Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Vec3 { x: self.x * rhs, y: self.y * rhs, z: self.z * rhs }
+    }
+}
+impl ops::Mul<f64> for Vec3 {
     type Output = Vec3;
 
     fn mul(self, rhs: f64) -> Self::Output {
@@ -85,8 +119,22 @@ impl ops::Mul<&Vec3> for &Vec3 {
         Vec3 { x: self.x * rhs.x, y: self.y * rhs.y, z: self.z * rhs.z }
     }
 }
+impl ops::Mul<Vec3> for Vec3 {
+    type Output = Vec3;
+
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        Vec3 { x: self.x * rhs.x, y: self.y * rhs.y, z: self.z * rhs.z }
+    }
+}
 
 impl ops::Neg for &Vec3 {
+    type Output = Vec3;
+
+    fn neg(self) -> Self::Output {
+        Vec3 { x: -self.x, y: -self.y, z: -self.z }
+    }
+}
+impl ops::Neg for Vec3 {
     type Output = Vec3;
 
     fn neg(self) -> Self::Output {
@@ -101,8 +149,22 @@ impl ops::Sub<&Vec3> for &Vec3 {
         self + &(-rhs)
     }
 }
+impl ops::Sub<Vec3> for Vec3 {
+    type Output = Vec3;
+
+    fn sub(self, rhs: Vec3) -> Self::Output {
+        self + (-rhs)
+    }
+}
 
 impl ops::Div<f64> for &Vec3 {
+    type Output = Vec3;
+
+    fn div(self, rhs: f64) -> Self::Output {
+        self * (1.0 / rhs)
+    }
+}
+impl ops::Div<f64> for Vec3 {
     type Output = Vec3;
 
     fn div(self, rhs: f64) -> Self::Output {
@@ -127,5 +189,5 @@ impl Ray {
 fn ray_color(ray: &Ray) -> Color {
     let unit_direction: Vec3 = ray.direction.unit();
     let t: f64 = 0.5*(unit_direction.y + 1.0);
-    &(&Color{ x: 0.0, y: 0.0, z: 0.0 } * (1.0-t)) + &(&Color{x: 0.5, y: 0.7, z: 1.0} * t)
+    (Color::new(1.0, 1.0, 1.0) * (1.0-t)) + (Color::new(0.5, 0.7, 1.0) * t)
 }
