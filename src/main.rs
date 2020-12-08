@@ -187,7 +187,21 @@ impl Ray {
 }
 
 fn ray_color(ray: &Ray) -> Color {
-    let unit_direction: Vec3 = ray.direction.unit();
-    let t: f64 = 0.5*(unit_direction.y + 1.0);
-    (Color::new(1.0, 1.0, 1.0) * (1.0-t)) + (Color::new(0.5, 0.7, 1.0) * t)
+    if hit_sphere(&Point3::new(0.0, 0.0, -1.0), 0.5, ray) {
+        Color::new(1.0, 0.0, 0.0)
+    } else {
+        let unit_direction: Vec3 = ray.direction.unit();
+        let t: f64 = 0.5*(unit_direction.y + 1.0);
+        (Color::new(1.0, 1.0, 1.0) * (1.0-t)) + (Color::new(0.5, 0.7, 1.0) * t)
+    }
+
+}
+
+fn hit_sphere(center: &Point3, radius: f64, ray: &Ray) -> bool {
+    let oc = &ray.origin - center;
+    let a = ray.direction.dot(&ray.direction);
+    let b = 2.0 * oc.dot(&ray.direction);
+    let c = oc.dot(&oc) - radius * radius;
+    let disc = b * b - 4.0 * a * c;
+    disc > 0.0
 }
