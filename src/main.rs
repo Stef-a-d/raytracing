@@ -1,4 +1,10 @@
-use core::ops;
+mod geometry;
+mod ray;
+mod sphere;
+mod hittable_list;
+
+use crate::geometry::{Vec3, Color, Point3};
+use crate::ray::Ray;
 
 fn main() {
 
@@ -45,150 +51,11 @@ fn write_color(clr: &Color) {
     println!("{0} {1} {2}", ir, ig, ib);
 }
 
-#[derive(Clone, Copy)]
-struct Vec3 {
-    x: f64,
-    y: f64,
-    z: f64,
-}
-
-impl Vec3 {
-    fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3{x,y,z}
-    }
-
-    fn length_squared(&self) -> f64 {
-        self.x * self.x + self.y * self.y + self.z * self.z
-    }
-
-    fn length(&self) -> f64 {
-        self.length_squared().sqrt()
-    }
-
-    fn dot(&self, rhs: &Vec3) -> f64 {
-        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
-    }
-
-    fn cross(&self, rhs: &Vec3) -> Vec3 {
-        Vec3 {
-            x: self.y * rhs.z - self.z * rhs.y,
-            y: self.z * rhs.x - self.x * rhs.z,
-            z: self.x * self.y - self.y * self.x,
-        }
-    }
-
-    fn unit(&self) -> Vec3 {
-        self / self.length()
-    }
-}
-
-impl ops::Add<&Vec3> for &Vec3 {
-    type Output = Vec3;
-
-    fn add(self, rhs: &Vec3) -> Self::Output {
-        Vec3 { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
-    }
-}
-impl ops::Add<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn add(self, rhs: Vec3) -> Self::Output {
-        Vec3 { x: self.x + rhs.x, y: self.y + rhs.y, z: self.z + rhs.z }
-    }
-}
-
-impl ops::Mul<f64> for &Vec3 {
-    type Output = Vec3;
-
-    fn mul(self, rhs: f64) -> Self::Output {
-        Vec3 { x: self.x * rhs, y: self.y * rhs, z: self.z * rhs }
-    }
-}
-impl ops::Mul<f64> for Vec3 {
-    type Output = Vec3;
-
-    fn mul(self, rhs: f64) -> Self::Output {
-        Vec3 { x: self.x * rhs, y: self.y * rhs, z: self.z * rhs }
-    }
-}
-
-impl ops::Mul<&Vec3> for &Vec3 {
-    type Output = Vec3;
-
-    fn mul(self, rhs: &Vec3) -> Self::Output {
-        Vec3 { x: self.x * rhs.x, y: self.y * rhs.y, z: self.z * rhs.z }
-    }
-}
-impl ops::Mul<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn mul(self, rhs: Vec3) -> Self::Output {
-        Vec3 { x: self.x * rhs.x, y: self.y * rhs.y, z: self.z * rhs.z }
-    }
-}
-
-impl ops::Neg for &Vec3 {
-    type Output = Vec3;
-
-    fn neg(self) -> Self::Output {
-        Vec3 { x: -self.x, y: -self.y, z: -self.z }
-    }
-}
-impl ops::Neg for Vec3 {
-    type Output = Vec3;
-
-    fn neg(self) -> Self::Output {
-        Vec3 { x: -self.x, y: -self.y, z: -self.z }
-    }
-}
-
-impl ops::Sub<&Vec3> for &Vec3 {
-    type Output = Vec3;
-
-    fn sub(self, rhs: &Vec3) -> Self::Output {
-        self + &(-rhs)
-    }
-}
-impl ops::Sub<Vec3> for Vec3 {
-    type Output = Vec3;
-
-    fn sub(self, rhs: Vec3) -> Self::Output {
-        self + (-rhs)
-    }
-}
-
-impl ops::Div<f64> for &Vec3 {
-    type Output = Vec3;
-
-    fn div(self, rhs: f64) -> Self::Output {
-        self * (1.0 / rhs)
-    }
-}
-impl ops::Div<f64> for Vec3 {
-    type Output = Vec3;
-
-    fn div(self, rhs: f64) -> Self::Output {
-        self * (1.0 / rhs)
-    }
-}
-
-type Point3 = Vec3;
-type Color = Vec3;
-
-struct Ray {
-    origin: Point3,
-    direction: Vec3,
-}
-
-impl Ray {
-    fn at(self, t: f64) -> Point3 {
-        &self.origin + &(&self.direction * t)
-    }
-}
-
 fn ray_color(ray: &Ray) -> Color {
-    if hit_sphere(&Point3::new(0.0, 0.0, -1.0), 0.5, ray) {
-        Color::new(1.0, 0.0, 0.0)
+    let t = hit_sphere(&Point3::new(0.0, 0.0, -1.0), 0.5, ray);
+    if t > 0.0 {
+        let n = (ray.at(t) - Vec3::new(0.0, 0.0, -1.0)).unit();
+        Color::new(n.x + 1.0, n.y + 1.0, n.z + 1.0) * 0.5
     } else {
         let unit_direction: Vec3 = ray.direction.unit();
         let t: f64 = 0.5*(unit_direction.y + 1.0);
@@ -197,11 +64,16 @@ fn ray_color(ray: &Ray) -> Color {
 
 }
 
-fn hit_sphere(center: &Point3, radius: f64, ray: &Ray) -> bool {
+fn hit_sphere(center: &Point3, radius: f64, ray: &Ray) -> f64 {
     let oc = &ray.origin - center;
     let a = ray.direction.dot(&ray.direction);
-    let b = 2.0 * oc.dot(&ray.direction);
+    let half_b = oc.dot(&ray.direction);
     let c = oc.dot(&oc) - radius * radius;
-    let disc = b * b - 4.0 * a * c;
-    disc > 0.0
+    let disc = half_b * half_b - a * c;
+    // disc > 0.0
+    if disc < 0.0 {
+        -1.0
+    }else {
+        (-half_b - disc.sqrt())/(a)
+    }
 }
