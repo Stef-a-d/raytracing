@@ -1,8 +1,8 @@
 use crate::geometry::Point3;
 use crate::ray::{Hittable, Ray, HitRecord};
 
-struct Sphere{
-    center: Point3, radius: f64,
+pub struct Sphere{
+    pub center: Point3, pub radius: f64,
 }
 
 impl Hittable for Sphere {

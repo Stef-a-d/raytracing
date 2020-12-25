@@ -13,6 +13,12 @@ impl HittableList{
     pub fn add(&mut self, object: Rc<dyn Hittable>) {
         self.objects.push(object)
     }
+
+    pub fn new() -> HittableList {
+        HittableList{
+            objects: Vec::new()
+        }
+    }
 }
 
 impl Hittable for HittableList{
