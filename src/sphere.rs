@@ -1,4 +1,4 @@
-use crate::geometry::Point3;
+use crate::vec3::Point3;
 use crate::ray::{Hittable, Ray, HitRecord};
 
 pub struct Sphere{

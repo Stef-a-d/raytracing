@@ -1,4 +1,6 @@
 use core::ops;
+use rand::Rng;
+
 #[derive(Clone, Copy)]
 pub struct Vec3 {
     pub x: f64,
@@ -33,6 +35,32 @@ impl Vec3 {
 
     pub fn unit(&self) -> Vec3 {
         self / self.length()
+    }
+
+    pub fn random(min: f64, max: f64) -> Vec3 {
+        Vec3::new(rand::thread_rng().gen_range(min..max), rand::thread_rng().gen_range(min..max), rand::thread_rng().gen_range(min..max))
+    }
+
+    pub fn random_in_unit_sphere() -> Vec3{
+        loop {
+            let p = Vec3::random(-1.0, 1.0);
+            if p.length_squared() < 1.0 {
+                return p
+            }
+        }
+    }
+
+    pub fn random_unit_vector() -> Vec3 {
+        Vec3::random_in_unit_sphere().unit()
+    }
+
+    pub fn random_in_hemisphere(normal: &Vec3) -> Vec3 {
+        let in_unit_sphere = Vec3::random_in_unit_sphere();
+        if in_unit_sphere.dot(normal) > 0.0 {
+            in_unit_sphere
+        } else {
+            -in_unit_sphere
+        }
     }
 }
 
