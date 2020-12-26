@@ -1,8 +1,10 @@
 use crate::vec3::Point3;
 use crate::ray::{Hittable, Ray, HitRecord};
+use std::rc::Rc;
+use crate::material::Material;
 
 pub struct Sphere{
-    pub center: Point3, pub radius: f64,
+    pub center: Point3, pub radius: f64, pub material: Rc<dyn Material>,
 }
 
 impl Hittable for Sphere {
@@ -29,7 +31,7 @@ impl Hittable for Sphere {
         }else{
             -normal
         };
-        Some(HitRecord{p, normal, t: root, front_face})
+        Some(HitRecord{p, normal, t: root, front_face, material: self.material.clone()})
 
     }
 }

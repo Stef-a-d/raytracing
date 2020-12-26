@@ -3,6 +3,7 @@ mod ray;
 mod sphere;
 mod hittable_list;
 mod camera;
+mod material;
 
 use crate::vec3::{Vec3, Color, Point3};
 use crate::ray::{Ray, Hittable};
@@ -11,6 +12,7 @@ use std::rc::Rc;
 use crate::sphere::Sphere;
 use crate::camera::Camera;
 use rand::Rng;
+use crate::material::{Lambertian, Metal};
 
 fn main() {
 
@@ -24,8 +26,16 @@ fn main() {
     // World
 
     let mut world = HittableList::new();
-    world.add(Rc::new(Sphere{center: Point3::new(0.0, 0.0, -1.0), radius: 0.5}));
-    world.add(Rc::new(Sphere{center: Point3::new(0.0, -100.5, -1.0), radius: 100.0}));
+
+    let material_ground = Rc::new(Lambertian::new(Color::new(0.8, 0.8, 0.0)));
+    let material_center = Rc::new(Lambertian::new(Color::new(0.9, 0.3, 0.3)));
+    let material_left = Rc::new(Metal::new(Color::new(0.8, 0.8, 0.8), 0.3));
+    let material_right = Rc::new(Metal::new(Color::new(0.8, 0.6, 0.2), 1.0));
+
+    world.add(Rc::new(Sphere{center: Point3::new(0.0, -100.5, -1.0), radius: 100.0, material: material_ground.clone()}));
+    world.add(Rc::new(Sphere{center: Point3::new(0.0, 0.0, -1.0), radius: 0.5, material: material_center.clone()}));
+    world.add(Rc::new(Sphere{center: Point3::new(-1.0, 0.0, -1.0), radius: 0.5, material: material_left.clone()}));
+    world.add(Rc::new(Sphere{center: Point3::new(1.0, 0.0, -1.0), radius: 0.5, material: material_right.clone()}));
 
 
     // Camera
@@ -91,7 +101,11 @@ fn ray_color(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
             (Color::new(1.0, 1.0, 1.0) * (1.0 - t)) + (Color::new(0.5, 0.7, 1.0) * t)
         },
         |rec| {
-            let target = rec.p + rec.normal + Vec3::random_in_hemisphere(&rec.normal);
-            ray_color(&Ray{ origin: rec.p, direction: target-rec.p}, world, depth - 1) * 0.5
+            let scatter = rec.material.scatter(ray, &rec);
+            scatter.map_or_else(
+                || {Color::new(0.0, 0.0, 0.0)},
+                |scatter| {
+                scatter.attenuation * ray_color(&scatter.scatter, world, depth - 1)
+            })
         })
 }
