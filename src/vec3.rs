@@ -29,7 +29,7 @@ impl Vec3 {
         Vec3 {
             x: (self.y * rhs.z) - (self.z * rhs.y),
             y: (self.z * rhs.x) - (self.x * rhs.z),
-            z: (self.x * self.y) - (self.y * self.x),
+            z: (self.x * rhs.y) - (self.y * rhs.x),
         }
     }
 

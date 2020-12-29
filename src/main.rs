@@ -35,12 +35,16 @@ fn main() {
     world.add(Rc::new(Sphere{center: Point3::new(0.0, -100.5, -1.0), radius: 100.0, material: material_ground.clone()}));
     world.add(Rc::new(Sphere{center: Point3::new(0.0, 0.0, -1.0), radius: 0.5, material: material_center.clone()}));
     world.add(Rc::new(Sphere{center: Point3::new(-1.0, 0.0, -1.0), radius: 0.5, material: material_left.clone()}));
-    world.add(Rc::new(Sphere{center: Point3::new(-1.0, 0.0, -1.0), radius: -0.4, material: material_left.clone()}));
+    world.add(Rc::new(Sphere{center: Point3::new(-1.0, 0.0, -1.0), radius: -0.45, material: material_left.clone()}));
     world.add(Rc::new(Sphere{center: Point3::new(1.0, 0.0, -1.0), radius: 0.5, material: material_right.clone()}));
 
 
     // Camera
-    let camera = Camera::new();
+    let camera = Camera::new(
+        Point3::new(-2.0,2.0, 1.0),
+        Point3::new(0.0, 0.0, -1.0),
+        Vec3::new(0.0, 1.0, 0.0),
+        /*90.0*/20.0, aspect_ratio);
 
     // Render
 
