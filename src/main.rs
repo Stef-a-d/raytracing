@@ -9,18 +9,18 @@ use crate::vec3::{Vec3, Color, Point3};
 use crate::ray::{Ray, Hittable};
 use crate::hittable_list::HittableList;
 use std::rc::Rc;
-use crate::sphere::Sphere;
+use crate::sphere::{Sphere, MovingSphere};
 use crate::camera::Camera;
 use rand::Rng;
-use crate::material::{Lambertian, Metal, Dielectric, Material};
+use crate::material::{Lambertian, Metal, Dielectric};
 
 fn main() {
 
     // Image
-    let aspect_ratio = 3.0 / 2.0;
-    let image_width: i32 = 1200;
+    let aspect_ratio = 16.0 / 9.0;
+    let image_width: i32 = 400;
     let image_height: i32 = (image_width as f64 / aspect_ratio) as i32;
-    let samples_per_pixel: i32 = 500;
+    let samples_per_pixel: i32 = 100;
     let max_depth = 50;
 
     // World
@@ -50,7 +50,7 @@ fn main() {
         lookfrom,
         lookat,
         vup,
-        /*90.0*/20.0, aspect_ratio, aperture, dist_to_focus);
+        /*90.0*/20.0, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
 
     // Render
 
@@ -121,8 +121,8 @@ fn ray_color(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
         })
 }
 
-fn random_double() -> f64 {
-    rand::thread_rng().gen_range(0.0..1.0)
+fn random_double(min: f64, max: f64) -> f64 {
+    rand::thread_rng().gen_range(min..max)
 }
 
 fn random_scene() -> HittableList {
@@ -133,24 +133,28 @@ fn random_scene() -> HittableList {
 
     for a in -11..11 {
         for b in -11..11{
-            let choose_mat = random_double();
-            let center = Point3::new(a as f64 + 0.9*random_double(), 0.2, b as f64 + 0.9*random_double());
+            let choose_mat = random_double(0.0, 1.0);
+            let center = Point3::new(a as f64 + 0.9*random_double(0.0, 1.0), 0.2, b as f64 + 0.9*random_double(0.0, 1.0));
 
             if (center-Point3::new(4.0, 0.2, 0.0)).length() > 0.9 {
-                let sphere_material: Rc<dyn Material> = if choose_mat < 0.8 {
+                let sphere: Rc<dyn Hittable> = if choose_mat < 0.8 {
                     // diffuse
                     let albedo = Color::random(0.0, 1.0);
-                    Rc::new(Lambertian::new(albedo))
+                    let material = Rc::new(Lambertian::new(albedo));
+                    let center1 = center + Vec3::new(0.0, random_double(0.0, 0.5), 0.0);
+                    Rc::new(MovingSphere {center0: center, center1: center1, time0: 0.0, time1: 1.0, radius: 0.2, material: material.clone()})
                 } else if choose_mat < 0.95 {
                     // metal
                     let albedo = Color::random(0.0, 1.0);
                     let fuzz = rand::thread_rng().gen_range(0.0..0.5);
-                    Rc::new(Metal::new(albedo, fuzz))
+                    let material = Rc::new(Metal::new(albedo, fuzz));
+                    Rc::new(Sphere {center: center, radius: 0.2, material: material.clone()})
                 } else {
                     // glass
-                    Rc::new(Dielectric::new(1.5))
+                    let material = Rc::new(Dielectric::new(1.5));
+                    Rc::new(Sphere {center: center, radius: 0.2, material: material.clone()})
                 };
-                world.add(Rc::new(Sphere {center: center, radius: 0.2, material: sphere_material.clone()}));
+                world.add(sphere.clone());
             }
         }
     }
