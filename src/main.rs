@@ -88,9 +88,9 @@ fn write_color(clr: &Color, samples_per_pixel: i32) {
 
     // Divide color by number of samples & gamma correct for gamma = 2
     let scale = 1.0 / (samples_per_pixel as f64);
-    let r = (clr.x * scale).sqrt();
-    let g = (clr.y * scale).sqrt();
-    let b = (clr.z * scale).sqrt();
+    let r = (clr.x() * scale).sqrt();
+    let g = (clr.y() * scale).sqrt();
+    let b = (clr.z() * scale).sqrt();
 
     let ir: i32 = (256.0 * clamp(r, 0.0, 0.999)) as i32;
     let ig: i32 = (256.0 * clamp(g, 0.0, 0.999)) as i32;
@@ -108,7 +108,7 @@ fn ray_color(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
     record.map_or_else(
         || {
             let unit_direction: Vec3 = ray.direction.unit();
-            let t: f64 = 0.5 * (unit_direction.y + 1.0);
+            let t: f64 = 0.5 * (unit_direction.y() + 1.0);
             (Color::new(1.0, 1.0, 1.0) * (1.0 - t)) + (Color::new(0.5, 0.7, 1.0) * t)
         },
         |rec| {
