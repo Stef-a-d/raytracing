@@ -1,5 +1,7 @@
+#![feature(iterator_fold_self)]
 use crate::ray::{Hittable, Ray, HitRecord};
 use std::rc::Rc;
+use crate::aabb::Aabb;
 
 pub struct HittableList {
     pub objects: Vec<Rc<dyn Hittable>>
@@ -34,5 +36,22 @@ impl Hittable for HittableList{
             }
         }
         hit_record
+    }
+    fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {
+        if self.objects.is_empty() {
+            return None
+        }
+        let mut result = None;
+        for object in &self.objects {
+            let tmp_box = object.bounding_box(time0, time1);
+            if tmp_box.is_none() {
+                return None
+            }
+            match result {
+                None => result = tmp_box,
+                Some(r) => result = tmp_box.map(|tmp| Aabb::surrounding_box(&tmp, &r)),
+            }
+        }
+        result
     }
 }

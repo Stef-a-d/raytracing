@@ -4,6 +4,8 @@ mod sphere;
 mod hittable_list;
 mod camera;
 mod material;
+mod aabb;
+mod bvh;
 
 use crate::vec3::{Vec3, Color, Point3};
 use crate::ray::{Ray, Hittable};
@@ -123,6 +125,10 @@ fn ray_color(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
 
 fn random_double(min: f64, max: f64) -> f64 {
     rand::thread_rng().gen_range(min..max)
+}
+
+fn random_int(min: i32, max: i32) -> i32 {
+    rand::thread_rng().gen_range(min..=max)
 }
 
 fn random_scene() -> HittableList {
