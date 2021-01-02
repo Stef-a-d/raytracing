@@ -3,6 +3,7 @@ use crate::ray::{Hittable, Ray, HitRecord};
 use std::rc::Rc;
 use crate::material::Material;
 use crate::aabb::Aabb;
+use std::f64::consts::PI;
 
 pub struct Sphere{
     pub center: Point3, pub radius: f64, pub material: Rc<dyn Material>,
@@ -32,7 +33,8 @@ impl Hittable for Sphere {
         }else{
             -normal
         };
-        Some(HitRecord{p, normal, t: root, front_face, material: self.material.clone()})
+        let (u, v) = get_sphere_uv(&normal);
+        Some(HitRecord{p, normal, t: root, u, v, front_face, material: self.material.clone()})
 
     }
 
@@ -40,6 +42,14 @@ impl Hittable for Sphere {
         Some(Aabb::new(self.center - Vec3::new(self.radius, self.radius, self.radius),
                        self.center + Vec3::new(self.radius, self.radius, self.radius)))
     }
+}
+
+fn get_sphere_uv(p: &Point3) -> (f64, f64) {
+    let theta = (-p).y().acos();
+    let phi = (-p).z().atan2(p.x()) + PI;
+    let u = phi/(2.0*PI);
+    let v = theta / PI;
+    (u, v)
 }
 
 pub struct MovingSphere{
@@ -81,7 +91,8 @@ impl Hittable for MovingSphere {
         }else{
             -normal
         };
-        Some(HitRecord{p, normal, t: root, front_face, material: self.material.clone()})
+        let (u, v) = get_sphere_uv(&normal);
+        Some(HitRecord{p, normal, t: root, u, v, front_face, material: self.material.clone()})
     }
 
     fn bounding_box(&self, time0: f64, time1: f64) -> Option<Aabb> {

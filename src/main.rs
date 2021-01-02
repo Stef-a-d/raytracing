@@ -6,6 +6,7 @@ mod camera;
 mod material;
 mod aabb;
 mod bvh;
+mod texture;
 
 use crate::vec3::{Vec3, Color, Point3};
 use crate::ray::{Ray, Hittable};
@@ -15,6 +16,7 @@ use crate::sphere::{Sphere, MovingSphere};
 use crate::camera::Camera;
 use rand::Rng;
 use crate::material::{Lambertian, Metal, Dielectric};
+use crate::texture::{CheckerTexture, SolidColor, Texture};
 
 fn main() {
 
@@ -24,6 +26,7 @@ fn main() {
     let image_height: i32 = (image_width as f64 / aspect_ratio) as i32;
     let samples_per_pixel: i32 = 100;
     let max_depth = 50;
+
 
     // World
 
@@ -39,20 +42,46 @@ fn main() {
     // world.add(Rc::new(Sphere{center: Point3::new(-1.0, 0.0, -1.0), radius: 0.5, material: material_left.clone()}));
     // world.add(Rc::new(Sphere{center: Point3::new(-1.0, 0.0, -1.0), radius: -0.45, material: material_left.clone()}));
     // world.add(Rc::new(Sphere{center: Point3::new(1.0, 0.0, -1.0), radius: 0.5, material: material_right.clone()}));
-    let world = random_scene();
+
+    let (world, lookfrom, lookat, vfov, aperture) = match 1 {
+        0 => {
+            let world = random_scene();
+            let lookfrom = Point3::new(13.0,2.0, 3.0);
+            let lookat = Point3::new(0.0, 0.0, 0.0);
+            let aperture = 0.1;
+            let vfov = 20.0;
+            (world, lookfrom, lookat, vfov, aperture)
+        },
+        1 => {
+            let world = two_spheres();
+            let lookfrom = Point3::new(13.0,2.0, 3.0);
+            let lookat = Point3::new(0.0, 0.0, 0.0);
+            let aperture = 0.0;
+            let vfov = 20.0;
+            (world, lookfrom, lookat, vfov, aperture)
+        }
+        _ => {
+            let world = random_scene();
+            let lookfrom = Point3::new(13.0,2.0, 3.0);
+            let lookat = Point3::new(0.0, 0.0, 0.0);
+            let aperture = 0.1;
+            let vfov = 20.0;
+            (world, lookfrom, lookat, vfov, aperture)
+        }
+    };
+
+
 
     // Camera
-    let lookfrom = Point3::new(13.0,2.0, 3.0);
-    let lookat = Point3::new(0.0, 0.0, 0.0);
+
+
     let vup = Vec3::new(0.0, 1.0, 0.0);
     let dist_to_focus = 10.0;
-    let aperture = 0.1;
-
     let camera = Camera::new(
         lookfrom,
         lookat,
         vup,
-        /*90.0*/20.0, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
+        /*90.0*/vfov, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
 
     // Render
 
@@ -134,7 +163,8 @@ fn random_int(min: i32, max: i32) -> i32 {
 fn random_scene() -> HittableList {
     let mut world = HittableList::new();
 
-    let ground_material = Rc::new(Lambertian::new(Color::new(0.5, 0.5, 0.5)));
+    let checker = Box::new(CheckerTexture::new(Color::new(0.2, 0.3, 0.1), Color::new(0.9, 0.9, 0.9)));
+    let ground_material = Rc::new(Lambertian::new(checker));
     world.add(Rc::new(Sphere{center: Point3::new(0.0, -1000.0, 0.0), radius: 1000.0, material: ground_material.clone()}));
 
     for a in -11..11 {
@@ -146,7 +176,7 @@ fn random_scene() -> HittableList {
                 let sphere: Rc<dyn Hittable> = if choose_mat < 0.8 {
                     // diffuse
                     let albedo = Color::random(0.0, 1.0);
-                    let material = Rc::new(Lambertian::new(albedo));
+                    let material = Rc::new(Lambertian::new(Box::new(SolidColor::new(albedo))));
                     let center1 = center + Vec3::new(0.0, random_double(0.0, 0.5), 0.0);
                     Rc::new(MovingSphere {center0: center, center1: center1, time0: 0.0, time1: 1.0, radius: 0.2, material: material.clone()})
                 } else if choose_mat < 0.95 {
@@ -168,11 +198,21 @@ fn random_scene() -> HittableList {
     let material1 = Rc::new(Dielectric::new(1.5));
     world.add(Rc::new(Sphere {center: Point3::new(0.0, 1.0, 0.0), radius: 1.0, material: material1.clone()}));
 
-    let material2 = Rc::new(Lambertian::new(Color::new(0.4, 0.2, 0.1)));
+    let material2 = Rc::new(Lambertian::new(Box::new(SolidColor::new(Color::new(0.4, 0.2, 0.1)))));
     world.add(Rc::new(Sphere {center: Point3::new(-4.0, 1.0, 0.0), radius: 1.0, material: material2.clone()}));
 
     let material3 = Rc::new(Metal::new(Color::new(0.7,0.6, 0.5), 0.0));
     world.add(Rc::new(Sphere {center: Point3::new(4.0, 1.0, 0.0), radius: 1.0, material: material3.clone()}));
 
     world
+}
+
+fn two_spheres() -> HittableList {
+    let mut objects = HittableList::new();
+    let checker: Box<Texture> = Box::new(CheckerTexture::new(Color::new(0.2, 0.3, 0.1), Color::new(0.9, 0.9, 0.9)));
+    let lambertian = Rc::new(Lambertian::new(checker));
+    objects.add(Rc::new(Sphere {center: Point3::new(0.0, -10.0, 0.0), radius: 10.0, material: lambertian.clone()}));
+    objects.add(Rc::new(Sphere {center: Point3::new(0.0, 10.0, 0.0), radius: 10.0, material: lambertian.clone()}));
+
+    objects
 }
